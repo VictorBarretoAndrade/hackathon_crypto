@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { MockBanner } from "@/components/mock-banner";
+import { SessionProvider } from "@/components/providers/session-provider";
 import { SolanaProvider } from "@/components/providers/solana-provider";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
@@ -33,7 +35,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SolanaProvider>{children}</SolanaProvider>
+        <SolanaProvider>
+          <SessionProvider>
+            <MockBanner />
+            {children}
+          </SessionProvider>
+        </SolanaProvider>
       </body>
     </html>
   );

@@ -1,5 +1,6 @@
-import { SiteHeader } from "@/components/site-header";
-import { WalletStatus } from "@/components/wallet/wallet-status";
+import { LandingCta } from "@/components/landing-cta";
+import { SiteFooter, SiteHeader } from "@/components/site-header";
+import { AccountControl } from "@/components/wallet/account-control";
 
 const STEPS = [
   {
@@ -19,7 +20,9 @@ const STEPS = [
 export default function Home() {
   return (
     <>
-      <SiteHeader />
+      <SiteHeader>
+        <AccountControl />
+      </SiteHeader>
       <main className="mx-auto w-full max-w-5xl flex-1 px-5 sm:px-8">
         <section className="pb-14 pt-16 sm:pb-20 sm:pt-24">
           <h1 className="max-w-3xl font-display text-5xl leading-[1.05] tracking-tight sm:text-7xl">
@@ -30,8 +33,8 @@ export default function Home() {
             accountant-ready record: classified, valued in BRL at the Central Bank&apos;s official
             PTAX rate, and backed by a receipt anyone can verify onchain.
           </p>
-          <div className="mt-10 max-w-2xl">
-            <WalletStatus />
+          <div className="mt-10">
+            <LandingCta />
           </div>
         </section>
 
@@ -47,11 +50,7 @@ export default function Home() {
           </ol>
         </section>
       </main>
-      <footer className="border-t border-line">
-        <p className="mx-auto w-full max-w-5xl px-5 py-6 text-sm text-muted sm:px-8">
-          Devnet only. Recebi does not convert currency, custody funds or calculate taxes.
-        </p>
-      </footer>
+      <SiteFooter />
     </>
   );
 }
