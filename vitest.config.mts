@@ -9,5 +9,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    // The mock ledger and database stay in memory: tests never write .mock-data/.
+    env: { RECEBI_MOCK_PERSIST: "off" },
   },
 });

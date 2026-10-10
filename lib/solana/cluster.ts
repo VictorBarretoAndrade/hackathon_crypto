@@ -1,4 +1,6 @@
-import { Connection } from "@solana/web3.js";
+import type { Connection } from "@solana/web3.js";
+import { MOCK_GENESIS_HASH } from "@/lib/mock/keys";
+import { IS_MOCK } from "@/lib/mode";
 
 /** Recebi is a devnet-only MVP. There is no mainnet code path. */
 export const CLUSTER = "devnet";
@@ -26,24 +28,37 @@ export function resolveRpcUrl(value: string | undefined): string {
   return value?.trim() || PUBLIC_DEVNET_RPC;
 }
 
+/** In mock mode the "RPC node" is a route of this very app. */
+function mockRpcUrl(): string {
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  return `${origin}/api/mock/rpc`;
+}
+
 assertDevnetCluster(process.env.NEXT_PUBLIC_SOLANA_CLUSTER);
 
-export const RPC_URL = resolveRpcUrl(process.env.NEXT_PUBLIC_RPC_URL);
+/** RPC endpoint for browser code. Server code uses getServerConnection(). */
+export const RPC_URL = IS_MOCK ? mockRpcUrl() : resolveRpcUrl(process.env.NEXT_PUBLIC_RPC_URL);
 
-/** A new RPC connection, for server code. Client code uses useConnection(). */
-export function createConnection(): Connection {
-  return new Connection(RPC_URL, "confirmed");
+export const NETWORK_LABEL = IS_MOCK ? "Mock ledger" : "Solana Devnet";
+
+const EXPECTED_GENESIS_HASH = IS_MOCK ? MOCK_GENESIS_HASH : DEVNET_GENESIS_HASH;
+
+/** True when the node behind `connection` is the network this mode expects. */
+export async function isExpectedNetwork(connection: Connection): Promise<boolean> {
+  return (await connection.getGenesisHash()) === EXPECTED_GENESIS_HASH;
 }
 
-/** True when the node behind `connection` really is on devnet. */
-export async function isDevnet(connection: Connection): Promise<boolean> {
-  return (await connection.getGenesisHash()) === DEVNET_GENESIS_HASH;
-}
-
+/** Link to a transaction: Solana Explorer on devnet, our own viewer in mock mode. */
 export function explorerTxUrl(signature: string): string {
+  if (IS_MOCK) return `/mock/tx/${signature}`;
   return `https://explorer.solana.com/tx/${signature}?cluster=${CLUSTER}`;
 }
 
-export function explorerAddressUrl(address: string): string {
+/** Link to an address on Solana Explorer. Null in mock mode: there is nothing to link to. */
+export function explorerAddressUrl(address: string): string | null {
+  if (IS_MOCK) return null;
   return `https://explorer.solana.com/address/${address}?cluster=${CLUSTER}`;
 }

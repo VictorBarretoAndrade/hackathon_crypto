@@ -1,4 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
+import { MOCK_MINT_ADDRESS } from "@/lib/mock/keys";
+import { IS_MOCK } from "@/lib/mode";
 
 /** A stablecoin Recebi accepts, as configured in NEXT_PUBLIC_STABLE_MINTS. */
 export interface StableMint {
@@ -75,9 +77,17 @@ export function parseStableMints(raw: string | undefined): StableMint[] {
   });
 }
 
-export const STABLE_MINTS: StableMint[] = parseStableMints(
-  process.env.NEXT_PUBLIC_STABLE_MINTS,
-);
+/** The only token on the mock ledger. Same symbol and decimals as real USDC. */
+export const MOCK_USDC: StableMint = {
+  mint: MOCK_MINT_ADDRESS,
+  symbol: "USDC",
+  decimals: 6,
+  label: "USDC (mock)",
+};
+
+export const STABLE_MINTS: StableMint[] = IS_MOCK
+  ? [MOCK_USDC]
+  : parseStableMints(process.env.NEXT_PUBLIC_STABLE_MINTS);
 
 export function findStableMint(mint: string): StableMint | undefined {
   return STABLE_MINTS.find((entry) => entry.mint === mint);
