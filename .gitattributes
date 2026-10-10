@@ -1,0 +1,3 @@
+# Always LF, on every OS. Receipt hashes are computed over exact bytes, so test
+# fixtures must not change when Windows checks them out.
+* text=auto eol=lf

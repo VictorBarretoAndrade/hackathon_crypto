@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. One accent colour (the green of the Verified seal), used
+ * sparingly so the seal stays the loudest thing on any screen. Buttons and
+ * text are ink; red is reserved for Mismatch and errors.
+ */
+@theme inline {
+  --color-paper: #faf9f6;
+  --color-surface: #ffffff;
+  --color-ink: #14171a;
+  --color-muted: #63696e;
+  --color-line: #e2dfd8;
+  --color-accent: #0b6b4d;
+  --color-accent-soft: #e3f1eb;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbe9e7;
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument-serif);
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Keyboard focus is always visible, in the accent colour. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The wallet picker comes from @solana/wallet-adapter-react-ui; align its font. */
+.wallet-adapter-modal-wrapper,
+.wallet-adapter-button {
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
