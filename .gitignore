@@ -37,6 +37,9 @@ yarn-error.log*
 # demo wallet keypairs (devnet only, created by scripts/seed-demo.ts)
 .demo-keys/
 
+# mock mode's local ledger and database
+.mock-data/
+
 # vercel
 .vercel
 

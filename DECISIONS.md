@@ -43,6 +43,93 @@ hashing and currency maths, and those are plain functions.
 seal, links and success states; buttons and text are ink. Red appears only for
 Mismatch and errors. A single theme keeps the demo videos consistent.
 
+## Two modes: live and mock
+
+**Mock mode fakes the transports, not the logic.** `NEXT_PUBLIC_RECEBI_MODE=mock`
+swaps exactly three things: the RPC (a small in-memory node in `lib/mock/`), the
+wallet (a built-in keypair behind the normal wallet-adapter interface) and the
+database (a JSON file behind the same `Store` interface as Supabase), plus
+synthetic PTAX rates. The mock node speaks JSON-RPC, so the app keeps using
+`@solana/web3.js`'s `Connection` everywhere and import, hashing, sealing and
+verification run the very same code in both modes. That is also what makes the
+whole flow testable in Vitest and in a headless browser, with no network.
+
+**The mock node executes real signed transactions.** It checks ed25519
+signatures and runs the Token, Associated Token Account and Memo instructions
+Recebi builds, then stores the result in the shape of a real `getTransaction`
+answer. Any method it does not implement returns "method not found" instead of
+something made up.
+
+**A mock result must never pass for a real one.** Mock receipts carry
+`"network": "recebi:mock"` and the verifier rejects a receipt whose network is
+not the one it is connected to. Every page shows a banner, PDFs carry a red
+notice, and user-facing sentences say "the mock ledger (not Solana)". Mock
+routes answer 404 in live mode. The demo keys are derived from public labels
+and are only ever registered in mock mode.
+
+## Phases 1 to 5
+
+**Use cases live in `lib/services/` and receive their dependencies.** Each takes
+`{ store, connection, fetchPtax, now }` as an argument. Route handlers are thin
+wrappers. Pages are client components that call the API, because nearly every
+screen depends on the wallet, which only exists in the browser.
+
+**Login keeps no state on the server.** The nonce travels inside a signed,
+5-minute, `httpOnly` challenge cookie; the session is a 7-day signed cookie.
+Trade-off: a session cannot be revoked before it expires. Fine for an MVP.
+
+**We send transactions ourselves.** The wallet only signs (`signTransaction`);
+the app sends through its own RPC and confirms by polling
+`getSignatureStatuses`. A transaction can therefore only reach the network the
+app is configured for, whatever network the wallet is on, and confirmation does
+not depend on WebSockets.
+
+**Import trusts balances, not instructions.** A payment is any transaction where
+the wallet's balance of an accepted mint went up, according to
+`pre/postTokenBalances`. That covers plain transfers, `transferChecked`, and
+transfers made through other programs. The payer is the wallet whose balance
+fell the most, which is not always the fee payer. Batches are 5 transactions:
+measured, the public devnet RPC accepts 5 and rejects 10.
+
+**Import never overwrites.** New rows are inserted with "on conflict do
+nothing" on `(owner_wallet, tx_signature, mint)`, so re-importing cannot undo a
+classification.
+
+**Dates are Brasília time; money is text.** The PTAX date of a payment is its
+calendar date in `America/Sao_Paulo`. BRL values and rates are decimal strings
+end to end (`decimal.js` for arithmetic, `::text` casts when reading Postgres).
+A fallback rate for *today* is not cached, because today's quote may still be
+published.
+
+**Sealing is prepare, sign, confirm.** `prepare` freezes the receipt into
+canonical JSON. The browser recomputes the hash before asking the wallet to
+sign. `confirm` runs the public `verifyReceipt` on the server and only then
+stores the signature, so the database cannot hold a seal that fails
+verification. A sealed receipt is immutable.
+
+**The receipt does not carry token decimals.** Verification takes them from the
+payment transaction itself and compares the formatted amount with the receipt.
+
+**An invoice is paid only by an exact match.** The reference key finds
+candidate transactions; one settles the invoice only if it credited the exact
+amount of the right mint to the issuer and carries the invoice hash in its
+memo. The oldest valid payment wins, and settling is idempotent.
+
+**CSV is comma-separated UTF-8 with a byte order mark.** Free-text cells that
+start with `=`, `+`, `-` or `@` are prefixed with `'`, because memos and names
+come from other people and spreadsheets execute formulas. Known gap: Excel in
+a Brazilian locale expects `;` and will need "Data > From Text/CSV".
+
+**PDFs use `@react-pdf/renderer` with the built-in Helvetica.** Nothing is
+downloaded at render time. Hyphenation is disabled so signatures are never
+printed with an added hyphen.
+
+**The payout quote rounds down.** PTAX sell minus a configurable spread
+(`PAYOUT_SPREAD_BPS`), truncated to centavos: a quote must not promise more
+than would arrive. It is simulated; see `lib/services/payouts.ts`.
+
+## Dependencies
+
 **Known `npm audit` findings, left as they are.** All of them come from
 transitive dependencies of `@solana/web3.js` v1 and the wallet adapter, have no
 fix available, and are outside the code we run: `braces` belongs to React
